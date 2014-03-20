@@ -80,14 +80,62 @@ class UNL_UndergraduateBulletin_EPUB_Utilities
      */
     public static function addLeaders($html)
     {
+        // Best practice guidelines when editing sections
+        //  Delete and re-enter whole line, not just partial (not doing so can screw up formatting including leaders and course links)
+        //  Use requirement-sec-2 for course listings that require leaders
+        //  Final formatting of course line should be: <p class="requirement-sec-2"><span class="req_desc">ARCH 101</span><span class="leader"></span><span class="req_value">3</span></p>
+        //    with possible <del> and <ins> tags present for tracking
+        //  Final formatting can be entered manually if preview is not cooperating
+
         $html = preg_replace('/<br \/>/', ' ', $html);
-        $html = preg_replace('/<p class="(requirement-sec-[1-3])"[^>]*>(.*)\s([\d]{1,2})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(requirement-sec-[1-4]\-ledr)"[^>]*>(.*)\s([\d]{1,2})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(requirement-sec-[1-3]\-note)"[^>]*>(.*)\s([\d]{1,2})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(requirement-sec-[1-3])"[^>]*>(.*)\s([\d]{1,2}\-[\d]{1,2})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(requirement-sec-[1-4]\-ledr)"[^>]*>(.*)\s([\d]{1,2}\-[\d]{1,2})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(requirement-sec-1)"[^>]*>(.*)\s([\d]{2,3})[\s]*[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
-        $html = preg_replace('/<p class="(abbreviations-list)"[^>]*>(((\sor\s)?[^\s]+)+)\s([^<]*)(<span.*>.*<\/span>)?[<\/ins>]*[\s]*[<\/del>]*[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$5 $6</span></p>', $html);
+
+        // remove unwanted \r and \n in requirement sections
+        $len = strlen($html);
+        $html2 = "";
+        $bln_found = false;
+        for ($i = 0; $i < $len; $i++)
+        {
+            if (substr($html,$i,26) == '<p class="requirement-sec-')
+            {
+                $pos1 = $i;
+                $bln_found = false;
+                for ($j = $i+27; $j < $len; $j++)
+                {
+                    if (substr($html,$j,4) == '</p>')
+                    {
+                        $pos2 = $j + 3;
+                        $html2 .= str_replace("\n","",str_replace("\r","",substr($html,$pos1,($pos2-$pos1+1))));
+                        $i = $pos2 + 1;
+                        //$html3 = "";
+                        $bln_found = true;
+                        break;
+                    }
+                }
+                if ($bln_found == false)
+                {
+                    $html2 .= substr($html,$i,1);
+                }
+            } else {
+                $html2 .= substr($html,$i,1);
+            }
+        }
+        $html = $html2;
+
+        // handle normal situations (original code)
+        $html = preg_replace('/<p class="(requirement-sec-[1-3])"[^>]*>(.*)\s([\d]{1,2})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(requirement-sec-[1-4]\-ledr)"[^>]*>(.*)\s([\d]{1,2})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(requirement-sec-[1-3]\-note)"[^>]*>(.*)\s([\d]{1,2})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(requirement-sec-[1-3])"[^>]*>(.*)\s([\d]{1,2}\-[\d]{1,2})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(requirement-sec-[1-4]\-ledr)"[^>]*>(.*)\s([\d]{1,2}\-[\d]{1,2})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(requirement-sec-1)"[^>]*>(.*)\s([\d]{2,3})[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+        $html = preg_replace('/<p class="(abbreviations-list)"[^>]*>(((\sor\s)?[^\s]+)+)\s([^<]*)(<span.*>.*<\/span>)?<\/p>/', '<p class="$1"><span class="req_desc">$2</span><span class="leader"></span><span class="req_value">$5 $6</span></p>', $html);
+
+        // handle <ins> tag in section 2
+        $html = preg_replace('/<p class="(requirement-sec-2)"[^>]*>(.*)\s([\d]{1,2})[\s]*(<\/ins>)[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2$4</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+
+        // handle <ins> and <span> tags in section 2
+        $html = preg_replace('/<p class="(requirement-sec-2)"[^>]*>(.*)\s([\d]{1,2})[\s]*(<\/ins>[\s]*<\/span>)[\s]*<\/p>/', '<p class="$1"><span class="req_desc">$2$4</span><span class="leader"></span><span class="req_value">$3</span></p>', $html);
+
         return $html;
     }
 
